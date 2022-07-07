@@ -43,36 +43,65 @@ export class BlockService {
   }
 
   async getRestBlock() {
-    const blockNumber = await web3.eth.getBlockNumber();
-    const last = await this.blockRepository.find({
+    try {
+      const blockNumber = await web3.eth.getBlockNumber();
+      const last = await this.blockRepository.find({
+        order: {
+          number: 'DESC',
+        },
+      });
+      console.log(last[0]);
+      const currentMyBlock = last[0].number;
+      console.log(blockNumber, currentMyBlock);
+      if (currentMyBlock < blockNumber) {
+        console.log(
+          `블록이 ${blockNumber - currentMyBlock}개 모자랍니다. db에 추가`,
+        );
+        for (let i = currentMyBlock + 1; i <= blockNumber; i++) {
+          const block = await web3.eth.getBlock(i, true);
+          const { transactions, uncles, ...rest } = block;
+          transactions.map(async (tx: Transaction) => {
+            const txEntity = this.transactionRepository.create(tx);
+            await this.transactionRepository.save(txEntity);
+          });
+          const blockEntity = this.blockRepository.create(rest);
+          await this.blockRepository.save(blockEntity);
+        }
+      } else {
+        return {
+          isError: true,
+          error: 'getRestBlockFromGethError : 모두 최신상태임',
+        };
+      }
+      return { isError: false, value: undefined };
+    } catch (e) {
+      return { isError: true, error: 'getRestBlockFromGethError : db에러' };
+    }
+  }
+
+  findAll(_page: number, _unit: number): Promise<Block[]> {
+    return this.blockRepository.find({
       order: {
         number: 'DESC',
       },
+      skip: (_page - 1) * _unit,
+      take: _unit,
     });
-    console.log(last[0]);
-    const currentMyBlock = last[0].number;
-    console.log(blockNumber, currentMyBlock);
-    if (currentMyBlock < blockNumber) {
-      console.log(
-        `블록이 ${blockNumber - currentMyBlock}개 모자랍니다. db에 추가`,
-      );
-      for (let i = currentMyBlock + 1; i <= blockNumber; i++) {
-        const block = await web3.eth.getBlock(i, true);
-        const { transactions, uncles, ...rest } = block;
-        transactions.map(async (tx: Transaction) => {
-          const txEntity = this.transactionRepository.create(tx);
-          await this.transactionRepository.save(txEntity);
-        });
-        const blockEntity = this.blockRepository.create(rest);
-        await this.blockRepository.save(blockEntity);
-      }
-    } else {
-      console.log('블록이 최신입니다.');
-    }
-    return '나머지블록';
   }
 
-  findAll(): Promise<Block[]> {
-    return this.blockRepository.find();
+  findOne(_number: number): Promise<Block> {
+    return this.blockRepository.findOne({
+      where: {
+        number: _number,
+      },
+    });
+  }
+
+  findOneByHash(_hash: string): Promise<Block> {
+    return this.blockRepository.findOne({
+      where: {
+        hash: _hash,
+      },
+    });
   }
 }

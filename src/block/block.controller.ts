@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { BlockService } from './block.service';
 
 @Controller('block')
@@ -15,13 +15,18 @@ export class BlockController {
     return this.blockService.getRestBlock();
   }
 
-  @Get('/findAll')
-  findAll() {
-    return this.blockService.findAll();
+  @Get('/list/:page')
+  findAll(@Param('page') listPage: number, @Query('unit') recordUnit: number) {
+    return this.blockService.findAll(listPage, recordUnit);
   }
 
-  // @Get('/find/:number')
-  // getOne(@Param('number') BlockNumber: number) {
-  //   return this.blockService.getOne(BlockNumber);
-  // }
+  @Get('/findByNumber/:number')
+  getOne(@Param('number') BlockNumber: number) {
+    return this.blockService.findOne(BlockNumber);
+  }
+
+  @Get('/findByHash/:hash')
+  getOneByHash(@Param('hash') BlockHash: string) {
+    return this.blockService.findOneByHash(BlockHash);
+  }
 }

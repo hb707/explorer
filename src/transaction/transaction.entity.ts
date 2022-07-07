@@ -7,10 +7,10 @@ export class Transaction {
   id: number;
 
   // @ManyToOne(() => Block, (block) => block.hash)
-  // blockHash: Block['hash'];
+  // blockHash: Block;
 
   // @ManyToOne(() => Block, (block) => block.number)
-  // blockNumber: Block['number'];
+  // blockNumber: Block;
 
   @Column({
     type: 'text',
